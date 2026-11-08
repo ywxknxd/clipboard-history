@@ -1,0 +1,14 @@
+# 本机数据，不上传
+data.db
+data.db-journal
+data.db-wal
+data.db-shm
+*.db
+
+# 运行日志
+run.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
