@@ -1,6 +1,10 @@
 """按 SPEC 验收清单跑一遍。能自动验的全在这里，点击类操作用真实控件方法模拟。
 
-用法：D:\\pyhj\\python.exe _acceptance.py
+用法：python 自检.py
+
+注意：凡是「UI 里的按钮/右键菜单」都要真的调那个方法，不要直接调 store。
+2026-11-09 的教训：store.delete_phrase() 测得好好的，但 UI 那边读了一个
+已经被删掉的 title 字段，点删除直接抛 IndexError，自检全绿也没发现。
 """
 
 import os
@@ -9,7 +13,7 @@ import sys
 import time
 
 sys.stdout.reconfigure(encoding="utf-8")
-sys.path.insert(0, r"D:\剪贴板历史")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 TMP = os.path.join(os.environ["TEMP"], "acceptance.db")
 if os.path.exists(TMP):
@@ -125,6 +129,42 @@ check(btn_bottom <= win_bottom,
 check(not hasattr(dlg, "title_entry"), "对话框里没有标题输入框了")
 dlg.destroy()
 root.update()
+
+print("== 8c. 常用语删除：走 UI 那条路（右键 → 删除） ==")
+import tkinter.messagebox as _mb
+store.add_phrase("临时删除测试")
+win.refresh()
+_orig_ask = _mb.askyesno
+_mb.askyesno = lambda *a, **k: True        # 自动点「是」，不然弹窗卡住
+try:
+    plist = win.phrase_tree.get_children()
+    before_n = len(plist)
+    win.phrase_tree.selection_set(plist[0])
+    win._delete_phrase()                   # 这里以前读 row["title"]，一按就 IndexError
+    root.update()
+    check(len(win.phrase_tree.get_children()) == before_n - 1,
+          "UI 删除后列表少一条（%d → %d）" % (before_n, len(win.phrase_tree.get_children())))
+
+    for iid in win.phrase_tree.selection():
+        win.phrase_tree.selection_remove(iid)
+    n_before = len(store.list_phrases())
+    win._delete_phrase()
+    check(len(store.list_phrases()) == n_before, "没选中时点删除不会误删")
+finally:
+    _mb.askyesno = _orig_ask
+
+print("== 8d. 历史删除：走 UI 那条路 ==")
+store.add_history("待删除的历史条目")
+win.refresh()
+_mb.askyesno = lambda *a, **k: True
+try:
+    hlist = win.hist_tree.get_children()
+    win.hist_tree.selection_set(hlist[0])
+    win._delete_history()
+    root.update()
+    check(len(win.hist_tree.get_children()) == len(hlist) - 1, "UI 删除历史生效")
+finally:
+    _mb.askyesno = _orig_ask
 
 print("== 9. 7 天过期清理（历史清、常用语不清） ==")
 conn = sqlite3.connect(TMP)

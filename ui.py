@@ -463,7 +463,10 @@ class ClipboardWindow:
         if not row:
             return
         from tkinter import messagebox
-        if messagebox.askyesno("删除", "删掉常用语「%s」？" % row["title"], parent=self.root):
+        # 表里早就没有 title 了（常用语只留内容），这里必须读 content，
+        # 而且要截断——常用语可能是整段话，原样塞进对话框会撑得很宽。
+        text = preview(row["content"], 40)
+        if messagebox.askyesno("删除", "删掉这条常用语？\n\n%s" % text, parent=self.root):
             store.delete_phrase(item_id)
             self.refresh()
 
