@@ -186,6 +186,40 @@ win.show()
 root.update()
 check(root.state() == "normal", "能再次显示出来")
 
+print("== 11. 插件机制 ==")
+import paths
+import plugins
+
+check(paths.app_dir() == os.path.dirname(os.path.abspath(paths.__file__)),
+      "源码运行时，程序目录 = 代码所在目录")
+check(plugins.load_all() == [], "默认什么都不加载（示例文件名都以 _ 开头）")
+
+tmp_plugin = os.path.join(paths.plugins_dir(), "99_自检临时.py")
+
+
+def _放一个插件(source):
+    with open(tmp_plugin, "w", encoding="utf-8") as f:
+        f.write(source)
+    return plugins.load_all()
+
+
+try:
+    names = _放一个插件(
+        'NAME = "自检用"\n'
+        'def on_copy(text):\n'
+        '    return text.replace("哈哈", "嘿嘿")\n'
+    )
+    check(names == ["自检用"], "启用后能加载到插件")
+    check(plugins.process("哈哈") == "嘿嘿", "on_copy 的返回值生效")
+    check(plugins.process("正常内容") == "正常内容", "没命中时原样返回")
+
+    _放一个插件('def on_copy(text):\n    raise ValueError("故意炸一下")\n')
+    check(plugins.process("原内容") == "原内容", "插件抛异常时内容原样通过，不拖垮程序")
+finally:
+    if os.path.exists(tmp_plugin):
+        os.remove(tmp_plugin)
+    plugins.load_all()
+
 root.destroy()
 store.close()
 os.remove(TMP)

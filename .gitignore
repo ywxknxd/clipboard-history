@@ -12,3 +12,8 @@ run.log
 __pycache__/
 *.py[cod]
 .venv/
+
+# 打包产物
+build/
+dist/
+*.spec

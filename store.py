@@ -8,11 +8,13 @@ import os
 import sqlite3
 import time
 
+import paths
+
 # 单条内容超过这个长度就不记了。剪贴板里偶尔会进来整篇文档或一坨 base64，
 # 存下来只会让库变大、列表变慢，实际也用不上。
 MAX_LEN = 100_000
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db")
+DB_PATH = os.path.join(paths.app_dir(), "data.db")
 
 _conn = None
 
